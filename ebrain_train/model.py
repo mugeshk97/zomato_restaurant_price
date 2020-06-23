@@ -4,6 +4,7 @@ from xgboost import XGBRegressor
 from ebrain_train.Logger import Log
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score
+import pickle
 
 
 class Tuner:
@@ -86,33 +87,36 @@ class Model_Selector(Tuner):
             dtree = Tuner.decision_tree(self, X_train, y_train, parameters=False)
             dtree_prediction = dtree.predict(X_test)
             dtree_score = r2_score(y_test, dtree_prediction)
-            self.logger.log(log_file, 'Training Finished - Decision Tree %s' % dtree_score)
+            self.logger.log(log_file, 'Training Finished - Decision Tree -%s' % str(dtree_score))
         except Exception as e:
             self.logger.log(log_file, 'Failed to Train Decision Tree %s' % e)
         try:
             rforest = Tuner.random_forest(self, X_train, y_train, parameters=False)
             rforest_prediction = rforest.predict(X_test)
             rforest_score = r2_score(y_test, rforest_prediction)
-            self.logger.log(log_file, 'Training Finished - Random Forest %s' % rforest_score)
+            self.logger.log(log_file, 'Training Finished - Random Forest -%s' % str(rforest_score))
         except Exception as e:
             self.logger.log(log_file, 'Failed to Train Random Forest %s' % e)
         try:
             xgboost = Tuner.xg_boost(self, X_train, y_train, parameters=False)
             xgboost_prediction = xgboost.predict(X_test)
             xgboost_score = r2_score(y_test, xgboost_prediction)
-            self.logger.log(log_file, 'Training Finished - XGboost %s' % xgboost_score)
+            self.logger.log(log_file, 'Training Finished - XGboost -%s' % str(xgboost_score))
         except Exception as e:
             self.logger.log(log_file, 'Failed to Train Xgboost %s' % e)
         try:
             if rforest_score > xgboost_score:
+                with open('models/model-' + str(rforest_score) + '.pkl', 'wb') as file:
+                    pickle.dump(rforest, file)
                 self.logger.log(log_file, 'Model saved - RandomForestRegressor')
                 log_file.write('-' * 150 + '\n')
                 return rforest
             else:
+                with open('models/model-' + str(xgboost_score) + '.pkl', 'wb') as file:
+                    pickle.dump(xgboost, file)
                 self.logger.log(log_file, 'Model saved - XGBRegressor')
                 log_file.write('-' * 150 + '\n')
                 return xgboost
         except Exception as e:
             self.logger.log(log_file, 'Exception %s' % e)
             log_file.write('-' * 150 + '\n')
-
